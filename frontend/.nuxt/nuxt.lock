@@ -1,0 +1,9 @@
+{
+  "pid": 24872,
+  "startedAt": 1783938575461,
+  "command": "dev",
+  "cwd": "C:/Users/koonlametp/Desktop/PES/pes-app/frontend",
+  "port": 3000,
+  "hostname": "::1",
+  "url": "http://[::1]:3000"
+}

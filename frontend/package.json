@@ -1,0 +1,26 @@
+{
+  "name": "pes-frontend",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "nuxt dev --port 3000",
+    "build": "nuxt build",
+    "preview": "nuxt preview"
+  },
+  "dependencies": {
+    "@mdi/font": "^7.4.47",
+    "axios": "^1.7.7",
+    "html2canvas": "^1.4.1",
+    "jspdf": "^4.2.1",
+    "nuxt": "3.14.1592",
+    "vue": "^3.5.0",
+    "vuetify": "^3.7.3"
+  },
+  "devDependencies": {
+    "sass": "^1.79.0",
+    "vite-plugin-vuetify": "^2.0.4"
+  },
+  "overrides": {
+    "vite": "^6.0.0"
+  }
+}

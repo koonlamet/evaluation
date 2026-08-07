@@ -1,0 +1,56 @@
+{
+  "name": "PES API - ระบบประเมินบุคลากร",
+  "baseUrl": "http://localhost:7000",
+  "auth": "ส่ง Header: Authorization: Bearer <accessToken> (ได้จาก /api/auth/login)",
+  "responseFormat": { "success": "boolean", "message": "string (ถ้ามี)", "data | items": "ข้อมูล" },
+  "services": [
+    { "method": "POST", "path": "/api/auth/login", "desc": "เข้าสู่ระบบ ออก JWT", "body": ["email", "password"], "roles": "public" },
+    { "method": "POST", "path": "/api/auth/register", "desc": "สมัครเป็นผู้รับการประเมิน (มี validate)", "body": ["name_th", "email", "password"], "roles": "public" },
+
+    { "method": "GET", "path": "/api/users", "desc": "รายชื่อผู้ใช้ (pagination/search/sort)", "query": ["page", "itemsPerPage", "search", "sortBy", "sortDesc", "role"], "roles": "admin,evaluator" },
+    { "method": "GET", "path": "/api/users/me", "desc": "ดูข้อมูลส่วนตัวของตนเอง (5.2.2)", "roles": "any" },
+    { "method": "PUT", "path": "/api/users/me", "desc": "แก้ไขข้อมูลส่วนตัวของตนเอง (5.2.2) — ชื่อเท่านั้น (email เป็น username ต้องให้ admin แก้, รหัสผ่านใช้ /me/password)", "body": ["name_th?"], "roles": "any" },
+    { "method": "PUT", "path": "/api/users/me/password", "desc": "เปลี่ยนรหัสผ่านตนเอง ต้องยืนยันรหัสผ่านเดิมถูกต้องก่อน (ใหม่ >= 6 ตัว)", "body": ["current_password", "new_password"], "roles": "any" },
+    { "method": "POST", "path": "/api/users", "desc": "เพิ่มผู้ใช้", "body": ["name_th", "email", "password", "role"], "roles": "admin" },
+    { "method": "PUT", "path": "/api/users/:id", "desc": "แก้ไขผู้ใช้", "params": ["id"], "body": ["name_th?", "email?", "role?", "password?"], "roles": "admin" },
+    { "method": "DELETE", "path": "/api/users/:id", "desc": "ลบผู้ใช้", "params": ["id"], "roles": "admin" },
+
+    { "method": "GET/POST/PUT/DELETE", "path": "/api/topics", "desc": "หัวข้อการประเมิน (CRUD) — ผูกกับรอบการประเมิน", "body": ["period_id", "name_th", "description"], "query": ["period_id? (กรองเฉพาะหัวข้อของรอบนี้)"], "roles": "read: any, write: admin" },
+    { "method": "GET/POST/PUT/DELETE", "path": "/api/indicators", "desc": "ตัวชี้วัด (CRUD)", "body": ["topic_id", "name_th", "description", "weight", "type", "evidence_kind", "template_url"], "roles": "read: any, write: admin" },
+    { "method": "POST", "path": "/api/indicators/:id/template", "desc": "อัปโหลดไฟล์แม่แบบ/ตัวอย่าง (PDF/รูปภาพ) ให้ผู้รับการประเมินดาวน์โหลด", "params": ["id"], "form": ["file"], "roles": "admin" },
+    { "method": "DELETE", "path": "/api/indicators/:id/template", "desc": "ลบไฟล์แม่แบบออกจากตัวชี้วัด", "params": ["id"], "roles": "admin" },
+    { "method": "GET/POST/PUT/DELETE", "path": "/api/periods", "desc": "ช่วงเวลาประเมิน (CRUD) — เปิดใช้งาน (is_active=1) พร้อมกันได้หลายรอบ เช่น ประเมินการสอน + ประเมิน PA คนละหัวข้อ", "roles": "read: any, write: admin" },
+    { "method": "GET/POST/PUT/DELETE", "path": "/api/assignments", "desc": "มอบหมายกรรมการ+กำหนดบทบาท (CRUD, list คืนชื่อจริง join แล้ว) — กรองเฉพาะรอบที่ระบุได้", "body": ["period_id", "evaluator_id", "evaluatee_id", "committee_role"], "query": ["period_id? (กรองเฉพาะรอบนี้)"], "roles": "read: admin,evaluator write: admin" },
+    { "method": "POST", "path": "/api/assignments/:id/unlock", "desc": "ปลดล็อกใบประเมินที่กรรมการส่งแล้ว (กรอกผิดแล้วขอแก้) — สถานะกลับเป็น pending + ล้างลายเซ็น ต้องเซ็นส่งใหม่", "params": ["id"], "roles": "admin" },
+
+    { "method": "GET", "path": "/api/tracking/evaluators", "desc": "สถานะกรรมการแต่ละคน: ประเมินใครไปแล้ว/ใครยังไม่ประเมิน", "query": ["period_id?"], "roles": "admin" },
+    { "method": "GET", "path": "/api/tracking/evaluatees", "desc": "สถานะประเมินตนเองของผู้รับการประเมิน: กรอกไปกี่ตัวชี้วัดจากทั้งหมด", "query": ["period_id?"], "roles": "admin" },
+
+    { "method": "GET", "path": "/api/evidences/periods", "desc": "รายการรอบที่เปิดใช้งานอยู่ (อาจมีหลายรอบพร้อมกัน) พร้อมความคืบหน้าของตนเองแต่ละรอบ — หน้ารายการก่อนกดเข้าไปกรอกทีละรอบ", "roles": "evaluatee" },
+    { "method": "GET", "path": "/api/evidences", "desc": "ตัวชี้วัด+ข้อมูลที่กรอก+ไฟล์ ของผู้รับการประเมิน เฉพาะรอบที่ระบุ", "query": ["evaluatee_id?", "period_id?"], "roles": "any" },
+    { "method": "POST", "path": "/api/evidences", "desc": "บันทึกข้อมูล+ประเมินตนเอง (upsert) — ปฏิเสธถ้ารอบนั้นหมดเขต (end_date ผ่านไปแล้ว)", "body": ["indicator_id", "period_id", "detail", "url", "self_score", "self_note"], "roles": "evaluatee" },
+    { "method": "POST", "path": "/api/evidences/:id/files", "desc": "อัปโหลดไฟล์หลักฐานหลายไฟล์ (pdf/jpg/png <=5MB, รองรับชื่อไฟล์ภาษาไทย)", "params": ["id"], "form": ["files (multiple)"], "roles": "evaluatee" },
+    { "method": "DELETE", "path": "/api/evidences/files/:fileId", "desc": "ลบไฟล์หลักฐานที่แนบไว้", "params": ["fileId"], "roles": "evaluatee" },
+
+    { "method": "GET", "path": "/api/reviews/assignments", "desc": "งานที่กรรมการต้องประเมิน (รวมชื่อรอบ เผื่อมีหลายรอบพร้อมกัน)", "roles": "evaluator" },
+    { "method": "GET", "path": "/api/reviews/:assignmentId", "desc": "รายละเอียดใบประเมิน", "params": ["assignmentId"], "roles": "evaluator" },
+    { "method": "POST", "path": "/api/reviews", "desc": "ให้คะแนนทีละตัวชี้วัด (upsert) — ปฏิเสธถ้ารอบนั้นหมดเขตแล้ว", "body": ["assignment_id", "indicator_id", "score", "comment"], "roles": "evaluator" },
+    { "method": "POST", "path": "/api/reviews/:assignmentId/submit", "desc": "ยืนยันส่งผล + ลายเซ็น — ปฏิเสธถ้ารอบนั้นหมดเขตแล้ว", "body": ["overall_comment", "signature(base64)"], "roles": "evaluator" },
+    { "method": "GET", "path": "/api/reviews/feedback", "desc": "ผู้รับประเมินดูความเห็นกรรมการ เฉพาะรอบที่ระบุ", "query": ["period_id?"], "roles": "evaluatee" },
+
+    { "method": "GET", "path": "/api/summary/:evaluateeId", "desc": "สรุปผลรายบุคคล (คะแนนตนเอง+เฉลี่ยกรรมการ) — ระบุ evaluator_id ดูคะแนนดิบกรรมการรายคนได้", "params": ["evaluateeId"], "query": ["period_id?", "evaluator_id?"], "roles": "any" },
+    { "method": "GET", "path": "/api/stats", "desc": "สถิติภาพรวม + คะแนนเฉลี่ยถ่วงน้ำหนักรายหัวข้อ/รายตัวชี้วัด (สำหรับแผนภูมิ dashboard)", "query": ["period_id?", "level? (topic|indicator)"], "roles": "admin" },
+
+    { "method": "POST", "path": "/api/backup", "desc": "สำรองข้อมูล 1 snapshot (ทุกตาราง + สำเนาไฟล์แนบทั้งโฟลเดอร์)", "roles": "admin" },
+    { "method": "GET", "path": "/api/backups", "desc": "รายการไฟล์สำรอง (บอกขนาดข้อมูล + มีไฟล์แนบสำรองคู่กันหรือไม่)", "roles": "admin" },
+    { "method": "POST", "path": "/api/restore/:file", "desc": "กู้คืนฐานข้อมูล + ไฟล์แนบ (ถ้า snapshot นั้นมีสำรองไว้) จาก snapshot ที่เลือก", "params": ["file"], "roles": "admin" },
+    { "method": "DELETE", "path": "/api/backups/:file", "desc": "ลบไฟล์สำรอง (json + โฟลเดอร์ไฟล์แนบคู่กัน)", "params": ["file"], "roles": "admin" }
+  ],
+  "errorCodes": {
+    "400": "ข้อมูลไม่ครบ/ไม่ผ่าน validate",
+    "401": "ยังไม่ล็อกอิน หรือโทเค็นไม่ถูกต้อง",
+    "403": "ไม่มีสิทธิ์ (บทบาทไม่ตรง)",
+    "404": "ไม่พบข้อมูล",
+    "409": "ข้อมูลซ้ำ"
+  }
+}
